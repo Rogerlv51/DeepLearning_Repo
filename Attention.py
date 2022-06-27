@@ -64,6 +64,16 @@ if __name__ == '__main__':
     add_attention_test = Additive_Attention(key_size=2, query_size=20, hidden_size=100, dropout=0.1)
     add_attention_test.eval()
     data = add_attention_test(query, key, values, valid_lens)
-    print(data)
+    print(data, "\n")
 
     # 测试点积注意力评分函数
+    # 我们使⽤与先前加性注意⼒例⼦中相同的键、值和有效⻓度
+    # 对于点积操作，我们令查询的特征维度与键的特征维度⼤⼩相同
+    query2 = torch.normal(0, 1, (2, 1, 2))   # 保证最后一个维度相同
+    dot_attention_test = DotProd_Attention(dropout=0.5)
+    dot_attention_test.eval()
+    x = dot_attention_test(query2, key, values, valid_lens)
+    print(x)
+
+    # 与加性注意⼒演⽰相同，由于键包含的是相同的元素，⽽这些元素⽆法通过任何查询进⾏区分，
+    # 因此获得了均匀的注意⼒权重

@@ -1,5 +1,4 @@
 from turtle import forward
-from typing import ValuesView
 import torch
 import math
 import torch.nn as nn
@@ -25,11 +24,11 @@ class Additive_Attention(nn.Module):
         # `queries` 的形状：(`batch_size`, 查询的个数, 1, `num_hidden`)
         # `key` 的形状：(`batch_size`, 1, “键－值”对的个数, `num_hiddens`)
         # 使⽤⼴播⽅式进⾏求和
-        features = querys.unsqueeze(2) + keys.unsqueeze(1)       # 这里我觉得还是看自己query和key给的数据形式是啥样的
-        features = F.tanh(features)
+        in_features = querys.unsqueeze(2) + keys.unsqueeze(1)       # 这里我觉得还是看自己query和key给的数据形式是啥样的
+        in_features = F.tanh(in_features)
         # `self.w_v` 仅有⼀个输出，因此从形状中移除最后那个维度。
         # `scores` 的形状：(`batch_size`, 查询的个数, “键-值”对的个数)
-        scores = self.w_v(features).squeeze(-1)
+        scores = self.w_v(in_features).squeeze(-1)
         self.attention_weights = masked_softmax(scores, valid_lens)
         return torch.bmm(self.dropout(self.attention_weights), values)        # 以batch的形式做矩阵乘法
 
@@ -49,6 +48,65 @@ class DotProd_Attention(nn.Module):
         self.attention_weights = masked_softmax(scores, valid_lens)
         return torch.bmm(self.dropout(self.attention_weights), values)
 
+
+
+# Multi-head Attention 多头注意力
+'''
+在实践中，当给定相同的查询、键和值的集合时，我们希望模型可以基于相同的注意⼒机制学习到不同的⾏
+为，然后将不同的⾏为作为知识组合起来，捕获序列内各种范围的依赖关系(例如，短距离依赖和⻓距离依
+赖关系)与其只使⽤单独⼀个注意⼒汇聚, 我们可以⽤独⽴学习得到的h组不同的 线性投影(linear projections）
+来变换查询、键和值。然后, 这h组变换后的查询、键和值将并⾏地送到注意⼒汇聚中。最后, 将这h个注意
+⼒汇聚的输出拼接在⼀起，并且通过另⼀个可以学习的线性投影进⾏变换，以产⽣最终输出
+'''
+
+def transpose_qkv(X, num_heads):
+    """为了多注意⼒头的并⾏计算⽽变换形状"""
+    # 输⼊X的形状:(batch_size，查询或者“键－值”对的个数，num_hiddens)
+    # 输出X的形状:(batch_size，查询或者“键－值”对的个数，num_heads, num_hiddens/num_heads)
+    X = X.reshape(X.shape[0], X.shape[1], num_heads, -1) 
+    
+    # 输出X的形状:(batch_size，num_heads，查询或者“键－值”对的个数, num_hiddens/num_heads)
+    X = X.permute(0, 2, 1, 3) 
+    
+    # 最终输出的形状:(batch_size*num_heads,查询或者“键－值”对的个数, num_hiddens/num_heads)
+    return X.reshape(-1, X.shape[2], X.shape[3])
+
+def transpose_output(X, num_heads):
+    """逆转transpose_qkv函数的操作"""
+    X = X.reshape(-1, num_heads, X.shape[1], X.shape[2])
+    X = X.permute(0, 2, 1, 3)
+    return X.reshape(X.shape[0], X.shape[1], -1)
+
+class Multihead_attention(nn.Module):
+    def __init__(self, num_heads, dropout, query_size, key_size, value_size, 
+    num_hiddens, bias=False, **kwargs):
+        super(Multihead_attention, self).__init__(**kwargs)
+        self.num_heads = num_heads
+        self.attention = DotProd_Attention(dropout)
+        self.W_q = nn.Linear(query_size, num_hiddens, bias=bias)
+        self.W_k = nn.Linear(key_size, num_hiddens, bias=bias)
+        self.W_v = nn.Linear(value_size, num_hiddens, bias=bias)
+        self.W_o = nn.Linear(num_hiddens, num_hiddens, bias=bias)
+    def forward(self, queries, keys, values, valid_lens):
+        # queries，keys，values的形状:
+        # (batch_size，查询或者“键－值”对的个数，num_hiddens)
+        # valid_lens 的形状:
+        # (batch_size，)或(batch_size，查询的个数) # 经过变换后，输出的queries，keys，values 的形状:
+        # (batch_size*num_heads，查询或者“键－值”对的个数，num_hiddens/num_heads)
+        queries = transpose_qkv(self.W_q(queries), self.num_heads)
+        keys = transpose_qkv(self.W_k(keys), self.num_heads)
+        values = transpose_qkv(self.W_v(values), self.num_heads)
+        
+        if valid_lens is not None: 
+            # 在轴0，将第⼀项（标量或者⽮量）复制num_heads次，
+            # 然后如此复制第⼆项，然后诸如此类。
+            valid_lens = torch.repeat_interleave(valid_lens, repeats=self.num_heads, dim=0)
+
+        # output的形状:(batch_size*num_heads，查询的个数，num_hiddens/num_heads)
+        output = self.attention(queries, keys, values, valid_lens)
+        # output_concat的形状:(batch_size，查询的个数，num_hiddens)
+        output_concat = transpose_output(output, self.num_heads)
+        return self.W_o(output_concat)
 
 
 if __name__ == '__main__':
@@ -73,7 +131,19 @@ if __name__ == '__main__':
     dot_attention_test = DotProd_Attention(dropout=0.5)
     dot_attention_test.eval()
     x = dot_attention_test(query2, key, values, valid_lens)
-    print(x)
+    print(x, "\n")
 
     # 与加性注意⼒演⽰相同，由于键包含的是相同的元素，⽽这些元素⽆法通过任何查询进⾏区分，
     # 因此获得了均匀的注意⼒权重
+
+
+    # 测试多头注意力
+    num_hiddens, num_heads = 100, 5
+    Multi_head = Multihead_attention(num_heads, 0.5, num_hiddens, num_hiddens, num_hiddens, num_hiddens)
+    Multi_head.eval()
+    batch_size, num_queries = 2, 4
+    num_kvpairs, valid_lens2 = 6, torch.tensor([3, 2])
+    X = torch.ones((batch_size, num_queries, num_hiddens))
+    Y = torch.ones((batch_size, num_kvpairs, num_hiddens))
+    out_attention = Multi_head(X, Y, Y, valid_lens2)
+    print(out_attention)

@@ -51,6 +51,7 @@ class DotProd_Attention(nn.Module):
 
 
 # Multi-head Attention 多头注意力
+# 自注意力就是输入到Multi-head中的query，key和value的值设为相同即可
 '''
 在实践中，当给定相同的查询、键和值的集合时，我们希望模型可以基于相同的注意⼒机制学习到不同的⾏
 为，然后将不同的⾏为作为知识组合起来，捕获序列内各种范围的依赖关系(例如，短距离依赖和⻓距离依

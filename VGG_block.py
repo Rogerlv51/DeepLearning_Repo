@@ -55,10 +55,7 @@ if __name__ == "__main__":
     vggtest = VGG_11(small_conv_arch)
     # print(vggtest)   # 打印网络结构
 
-    
-    lr, num_epochs, batch_size = 0.05, 2, 32   # 这里电脑用的cpu就把epoch这些改小点为了速度
+    # 这里电脑用的cpu就把epoch这些改小点为了速度，GPU显存不够话也调小batch_size
+    lr, num_epochs, batch_size = 0.05, 10, 64   
     train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=224)
     d2l.train_ch6(vggtest, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())
-
-    
-    

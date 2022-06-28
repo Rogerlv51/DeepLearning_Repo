@@ -110,6 +110,28 @@ class Multihead_attention(nn.Module):
         return self.W_o(output_concat)
 
 
+# 位置编码，编码方式有很多种，transformer里面是用三角函数，偶数位置sin奇数位置cos
+class PositionalEmbedding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEmbedding, self).__init__()
+        # Compute the positional encodings once in log space.
+        pe = torch.zeros(max_len, d_model).float()    # 先初始化一个位置编码矩阵
+        pe.require_grad = False
+
+        position = torch.arange(0, max_len).float().unsqueeze(1)
+        div_term = (torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model)).exp()
+
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)    
+        # 这段代码的意思是把位置编码pe矩阵永久存在缓存区中，不会随着程序运行而清除，相当于预先算好pe保存在内存中
+
+    def forward(self, x):
+        return self.pe[:, :x.size(1)]
+
+
 if __name__ == '__main__':
     # 测试加性注意力分数
     # 这里用两个batch
@@ -147,4 +169,11 @@ if __name__ == '__main__':
     X = torch.ones((batch_size, num_queries, num_hiddens))
     Y = torch.ones((batch_size, num_kvpairs, num_hiddens))
     out_attention = Multi_head(X, Y, Y, valid_lens2)
-    print(out_attention)
+    print(out_attention, "\n")
+
+
+    #测试位置编码
+    x = torch.randn(2,3,7)
+    postest = PositionalEmbedding(512)
+    x1 = postest(x)  # 输出只有一个矩阵
+    print(x1.size()) 

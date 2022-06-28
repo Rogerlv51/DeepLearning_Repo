@@ -1,6 +1,5 @@
 # 从VGG网络开始，引入了启发式网络，出现了块(block)的概念，重复层的操作来加深网络，从而才是深度学习
 
-from turtle import forward
 import torch
 import torch.nn as nn
 from d2l import torch as d2l
@@ -57,8 +56,9 @@ if __name__ == "__main__":
     # print(vggtest)   # 打印网络结构
 
     
-    lr, num_epochs, batch_size = 0.05, 2, 64   # 这里电脑用的cpu就把epoch这些改小点为了速度
+    lr, num_epochs, batch_size = 0.05, 2, 32   # 这里电脑用的cpu就把epoch这些改小点为了速度
     train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=224)
     d2l.train_ch6(vggtest, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())
+
     
     

@@ -46,10 +46,10 @@ class Residual(nn.Module):
 def resnet_block(in_channels, num_channels, num_residuals, first_block=False):
     blk = []
     for num in range(num_residuals):
-        if num == 0 and not first_block:
+        if num == 0 and not first_block:   # 判断第一个残差连接是否需要做特殊处理
             blk.append(Residual(in_channels, num_channels, use_11conv=True, strides=2))
         else:
-            blk.append(Residual(in_channels, num_channels))
+            blk.append(Residual(num_channels, num_channels))
     return blk
 
 

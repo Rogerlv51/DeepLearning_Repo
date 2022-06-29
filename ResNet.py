@@ -1,7 +1,6 @@
-from turtle import forward
 from matplotlib.pyplot import cla
 import torch
-from torch import ne, nn
+from torch import nn
 from d2l import torch as d2l
 from torch.nn import functional as F
 

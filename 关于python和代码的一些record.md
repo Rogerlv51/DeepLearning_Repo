@@ -20,5 +20,18 @@ args = parser.parse_args()
 # ArgumentParser 通过 parse_args() 方法解析参数
 print(args.epochs)
 ```
+```
+name or flags - 一个命名或者一个选项字符串的列表，例如 foo 或 -f, --foo。
+action - 当参数在命令行中出现时使用的动作基本类型，其默认值是store。
+nargs - 命令行参数应当消耗的数目。
+const - 被一些 action 和 nargs 选择所需求的常数。
+default - 当参数未在命令行中出现并且也不存在于命名空间对象时所产生的值。[不指定参数时的默认值]
+type - 命令行参数应当被转换成的类型。
+choices - 可用的参数的容器，即参数只能在这里面选择
+required - 此命令行选项是否可省略 （仅选项可用）。
+help - 一个此选项作用的简单描述。
+metavar - 在使用方法消息中使用的参数值示例。
+dest - 被添加到 parse_args() 所返回对象上的属性名。
+```
 
 - **具体的一些用法参见：https://zhuanlan.zhihu.com/p/513300085**

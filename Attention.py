@@ -1,4 +1,3 @@
-from turtle import forward
 import torch
 import math
 import torch.nn as nn
@@ -7,6 +6,8 @@ import numpy as np
 import pandas as pd
 from d2l import torch as d2l
 from Masked_Softmax import masked_softmax
+
+# 关于attention，multi-head attention的解释：https://zhuanlan.zhihu.com/p/414084879
 
 
 # Additive Attention 加性注意力，可学习的参数为Wk（h×k），Wq（h×q），value维度为h

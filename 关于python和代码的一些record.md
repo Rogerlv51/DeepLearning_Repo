@@ -8,10 +8,17 @@
 - **argparse是Python内置的一个用于命令项选项与参数解析的模块，argparse模块可以让人轻松编写用户友好的命令接口。**
 - **程序定义它需要的参数，然后argparse将弄清如何从sys.argv解析出那些参数。argparse模块还会自动生成帮助和使用手册，并在用户给程序传入无效参数时报出错误信息**
 
-``` 
+``` python
 import argparse
+# 首先，创建解析器ArgumentParser()对象
 parser = argparse.ArgumentParser(description='CV Train')
+# ArgumentParser 对象包含将命令行解析成 Python 数据类型所需的全部信息
+# 其次，添加参数调用add_argument()方法添加参数
 parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train.')
+# 这个epochs属性的名字叫做epochs，类型为int，默认情况下其值为10，对其的解释为Number of epochs to train->训练的epoch数
 args = parser.parse_args()
+# ArgumentParser 通过 parse_args() 方法解析参数
 print(args.epochs)
 ```
+
+- **具体的一些用法参见：https://zhuanlan.zhihu.com/p/513300085**

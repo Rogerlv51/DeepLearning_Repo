@@ -80,6 +80,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(X)
 
 # 叠加encoder_block
+# Transformer编码器输出的形状是（批量⼤⼩，时间步数⽬，num_hiddens）
 class TransformerEncoder(nn.Module):
     """transformer编码器"""
     def __init__(self, vocab_size, key_size, query_size, value_size,
@@ -105,3 +106,69 @@ class TransformerEncoder(nn.Module):
             X = blk(X, valid_lens)
             self.attention_weights[i] = blk.attention.attention.attention_weights
         return X
+
+# 测试Transformer_Encoder，两个block
+# encoder = TransformerEncoder(200, 24, 24, 24, 24, [100, 24], 24, 48, 8, 2, 0.5)
+# encoder.eval()
+# valid_lens = torch.tensor([3, 2])
+# print(encoder(torch.ones((2, 100), dtype=torch.long), valid_lens).shape)
+
+# transformer解码器也是由多个相同的层组成。在DecoderBlock类中实现的每个层包含了三个⼦层:
+# 解码器⾃注意⼒、“编码器-解码器”注意⼒和基于位置的前馈⽹络。这些⼦层也都被和紧随的layernorm围绕
+# 在掩蔽多头解码器⾃注意⼒层（第⼀个⼦层）中，查询、键和值都来⾃上⼀个解码器层的输出
+# 为了在解码器中保留⾃回归的属性，其掩蔽⾃注意⼒设定了参数dec_valid_lens，以便任何查询都只会与解码器中所有已经⽣成词元的位置（即直到该查询位置为⽌）进⾏注意⼒计算
+class DecoderBlock(nn.Module):
+    """解码器中第i个块"""
+    def __init__(self, key_size, query_size, value_size, num_hiddens,
+    norm_shape, ffn_num_input, ffn_num_hiddens, num_heads,
+    dropout, i, **kwargs):
+        super(DecoderBlock, self).__init__(**kwargs)
+        self.i = i
+        
+        self.attention1 = Multihead_attention(num_heads, dropout, query_size, key_size, value_size, num_hiddens)
+        self.addnorm1 = AddNorm(norm_shape, dropout)
+        self.attention2 = Multihead_attention(num_heads, dropout, query_size, key_size, value_size, num_hiddens)
+        self.addnorm2 = AddNorm(norm_shape, dropout)
+        self.ffn = PositionWiseFFN(ffn_num_input, ffn_num_hiddens, num_hiddens)
+        self.addnorm3 = AddNorm(norm_shape, dropout)
+    def forward(self, X, state):
+        enc_outputs, enc_valid_lens = state[0], state[1]
+        # 训练阶段，输出序列的所有词元都在同⼀时间处理，
+        # 因此state[2][self.i]初始化为None。
+        # 预测阶段，输出序列是通过词元⼀个接着⼀个解码的，
+        # 因此state[2][self.i]包含着直到当前时间步第i个块解码的输出表⽰
+        if state[2][self.i] is None:
+            key_values = X
+        else:
+            key_values = torch.cat((state[2][self.i], X), axis=1)
+        state[2][self.i] = key_values
+        if self.training:
+            batch_size, num_steps, _ = X.shape
+            # dec_valid_lens的开头:(batch_size,num_steps),
+            # 其中每⼀⾏是[1,2,...,num_steps]
+            dec_valid_lens = torch.arange(
+                1, num_steps + 1, device=X.device).repeat(batch_size, 1)
+        else:
+            dec_valid_lens = None
+        # ⾃注意⼒
+        X2 = self.attention1(X, key_values, key_values, dec_valid_lens)
+        Y = self.addnorm1(X, X2)
+        # 编码器－解码器注意⼒。
+        # enc_outputs的开头:(batch_size,num_steps,num_hiddens)
+        Y2 = self.attention2(Y, enc_outputs, enc_outputs, enc_valid_lens)
+        Z = self.addnorm2(Y, Y2)
+        return self.addnorm3(Z, self.ffn(Z)), state
+
+# 测试decoder-block
+valid_lens = torch.tensor([3, 2])
+encoder_blk = EncoderBlock(24, 24, 24, 24, [100, 24], 24, 48, 8, 0.5)
+encoder_blk.eval()
+decoder_blk = DecoderBlock(24, 24, 24, 24, [100, 24], 24, 48, 8, 0.5, 0)
+decoder_blk.eval()
+X = torch.ones((2, 100, 24))
+state = [encoder_blk(X, valid_lens), valid_lens, [None]]
+print(decoder_blk(X, state)[0].shape)
+
+
+
+

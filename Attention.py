@@ -112,6 +112,7 @@ class Multihead_attention(nn.Module):
 
 
 # 位置编码，编码方式有很多种，transformer里面是用三角函数，偶数位置sin奇数位置cos
+# 下面这个是Informer里面的位置编码写法
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=5000):
         super(PositionalEmbedding, self).__init__()

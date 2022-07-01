@@ -35,3 +35,29 @@ dest - 被添加到 parse_args() 所返回对象上的属性名。
 ```
 
 - **具体的一些用法参见：https://zhuanlan.zhihu.com/p/513300085**
+
+## 为什么有的项目里面在训练的文件出现def main(args)？
+
+- **这种方式用于和argparse联动，同时方便我们使用终端运行python文件并指定参数**
+- **我们可以在def main()中处理需要给程序传入的参数，把parser中的参数传到自己的函数或者变量中**
+- **当然如果这些参数的使用仅限于当前这个python文件，也可以不写def main()函数，直接在if __name__ == "__main__"中传入参数即可**
+
+```python
+import argparse
+def do_something(arg):
+    print(arg)
+
+def do_something_else(arg):
+    print(arg)
+
+def main(args):
+    do_something(args.an_arg)
+    do_something_else(args.another_arg)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--an_arg", type=int, default=10, help="第一个参数")
+    parser.add_argument("--another_arg", type=int, default=10, help="另一个参数")
+    args = parser.parse_args()
+    main(args)
+```

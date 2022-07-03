@@ -40,7 +40,7 @@ dest - 被添加到 parse_args() 所返回对象上的属性名。
 
 - **这种方式用于和argparse联动，同时方便我们使用终端运行python文件并指定参数**
 - **我们可以在def main()中处理需要给程序传入的参数，把parser中的参数传到自己的函数或者变量中**
-- **当然如果这些参数的使用仅限于当前这个python文件，也可以不写def main()函数，直接在if __name__ == "__main__"中传入参数即可**
+- **当然如果这些参数的使用仅限于当前这个python文件，也可以不写def main()函数，直接在if \_\_name\_\_ == "\_\_main\_\_"中传入参数即可**
 
 ```python
 import argparse

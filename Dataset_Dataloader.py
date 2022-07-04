@@ -45,7 +45,7 @@ class mydataset(Dataset):
 
 if __name__ == "__main__":
     training_data = datasets.FashionMNIST(root="data", train=True, download=False,
-    transform=transforms.ToTensor())
+    transform=trans)
 
     test_data = datasets.FashionMNIST(root="data", train=False, download=False,
     transform=transforms.ToTensor())
@@ -53,5 +53,6 @@ if __name__ == "__main__":
     training_dataloader = DataLoader(training_data, num_workers=1, batch_size=64, shuffle=True)
 
     test_dataloader = DataLoader(test_data, num_workers=1, batch_size=64, shuffle=True)
-    plt.imshow(training_data.data[0], cmap='gray')   # 数据显示一下
+    print(training_data.data[0])
+    plt.imshow(training_data.data[1], cmap='gray')   # 数据显示一下
     plt.show()

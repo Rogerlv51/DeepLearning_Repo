@@ -69,3 +69,27 @@ list(map(square, [1,2,3,4,5]))   # 使用 list() 转换为列表
 list(map(lambda x: x ** 2, [1, 2, 3, 4, 5]))   # 使用 lambda 匿名函数
 [1, 4, 9, 16, 25]
 ```
+</br>
+
+## **关于python中使用iter迭代器和next提取**
+- **iter( object )：生成可迭代对象的迭代器；object必须是可迭代对象，比如list、tuple、dict等，深度学习中我们就多用Dataloader就是一个迭代器**
+- **next( iter, end_num )：每执行依次，按顺序每次从迭代器中提取一个元素**
+
+```python
+b = [1,3,4,5]
+b = iter(b)   # 获得可迭代对象的迭代器
+for x in range(8):
+    print( next(x) )   # 每执行一次next()函数，就依次抽一个元素出来
+
+# 结果：
+1
+3
+4
+5
+---------------------------------------------------------------------------
+StopIteration                             Traceback (most recent call last)
+<ipython-input-30-a8068fff7e9c> in <module>
+      2 b = iter(b)
+      3 for x in range(8):
+StopIteration:
+```

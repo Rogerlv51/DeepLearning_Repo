@@ -10,10 +10,9 @@ import matplotlib.pyplot as plt
 
 # 通常使用Compose把你要做的transform全都包起来比如：
 trans = transforms.Compose([
-    transforms.ToTensor(),      # 这一步transforms是必须要有的，不然pytorch读取不了
-    transforms.CenterCrop(10),
-    transforms.PILToTensor(),
-    transforms.ConvertImageDtype(torch.float),])
+    transforms.PILToTensor(),    # 这一步transforms是必须要有的，不然pytorch读取不了
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),])
 
 class mydataset(Dataset):
     def __init__(self, label_name, img_dir, transform=None, target_transform=None):
@@ -53,6 +52,7 @@ if __name__ == "__main__":
     training_dataloader = DataLoader(training_data, num_workers=1, batch_size=64, shuffle=True)
 
     test_dataloader = DataLoader(test_data, num_workers=1, batch_size=64, shuffle=True)
-    print(training_data.data[0])
-    plt.imshow(training_data.data[1], cmap='gray')   # 数据显示一下
+    print(test_data.data[0].shape)
+    print(test_data.targets[0])     # 类别是9即'Ankle boot'
+    plt.imshow(training_data.data[0], cmap='gray')   # 数据显示一下
     plt.show()

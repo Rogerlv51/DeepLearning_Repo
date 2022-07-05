@@ -3,6 +3,9 @@
 import torch
 import torch.nn as nn
 from d2l import torch as d2l
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
 
 # 经典卷积神经网络 = 卷积层 + 线性ReLU激活 + 最大池化层
 # block的实现，在VGG中作者使⽤了带有3×3卷积核、padding为1（保持⾼度和宽度）的卷积层，
@@ -46,16 +49,69 @@ class VGG_11(nn.Module):
         x = self.dropout2(self.relu2(self.linear2(x)))
         x = self.linear3(x)
         return x
+
+def train(epoch, train_iter, test_data, test_label, train_net, loss, optimizer, device):    # 自定义训练函数，不用都d2l本身包里面自带的，锻炼工程能力       
+    train_net.to(device)
+    last_loss = [0]
+    num_loss = 0
+    for i in range(epoch):
+        train_net.train()
+        for batch, (data, label) in enumerate(train_iter):
+            data, label = data.to(device), label.to(device)
+            y_hat = train_net(data)
+            real_loss = loss(y_hat, label)
+            optimizer.zero_grad()
+            real_loss.backward()
+            optimizer.step()
+            with torch.no_grad():
+                train_net.eval()
+                if batch == batch_size - 1:
+                    test_out = train_net(test_data.float().to(device))
+                    pred_y = torch.max(test_out, 1)[1].to(device).data.squeeze()
+                    accurency = (test_label.to(device)==pred_y).sum().item() / len(test_label.to(device)) 
+                    print("Epoch: ", i+1, "---------Train Loss: %.4f" % real_loss.item(), 
+                      "---------Accurency: %.2f" % accurency)
+            
         
+        # 设置early_stop防止过拟合，当然也可以直接调pytorch的API
+        last_loss.append(real_loss)
+        if last_loss[i] > last_loss[i-1]:
+            num_loss += 1
+        else:
+            num_loss = 0 
+        if num_loss >= 5:   # 这里设置early stop patience为5
+            print("The train process is done")
+            break
+
 
 if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     conv_arch = ((1, 64), (1, 128), (2, 256), (2, 512), (2, 512))
     ratio = 4
     small_conv_arch = [(pair[0], pair[1] // ratio) for pair in conv_arch]
+    # 这里电脑用的cpu就把epoch这些改小点为了速度，GPU显存不够话也调小batch_size
+    lr, num_epochs, batch_size = 0.05, 10, 64 
     vggtest = VGG_11(small_conv_arch)
     # print(vggtest)   # 打印网络结构
-
-    # 这里电脑用的cpu就把epoch这些改小点为了速度，GPU显存不够话也调小batch_size
-    lr, num_epochs, batch_size = 0.05, 10, 64   
-    train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=224)
-    d2l.train_ch6(vggtest, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())
+    loss = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(vggtest.parameters(), lr=lr)
+    test_data = torchvision.datasets.FashionMNIST(
+        root='data',
+        train=False,
+        # transform参数一般是我们用来对数据进行预处理的修饰，通常跟torchvision.transforms中的函数相结合使用
+        transform=transforms.Compose([transforms.Resize((224,224)), transforms.ToTensor(), ]),    
+        # 把数据转化成tensor形式，且灰度值会从0-255调整到0-1
+        download=True)    # 本地有就设置成False，即使是True也不会重复下载
+    training_data = torchvision.datasets.FashionMNIST(
+        root="data", train=True, download=True,
+        transform=transforms.Compose([transforms.Resize((224,224)), transforms.ToTensor(),]))
+    train_iter = DataLoader(training_data, num_workers=1, batch_size=batch_size, shuffle=True)
+    # print(test_data.data[0].shape)    # 看下图片数据大小
+    # print(test_data.targets[0]) # 类别标签
+    
+    train(epoch=num_epochs, train_iter=train_iter, 
+          test_data=test_data.data.unsqueeze(dim=1), test_label=test_data.targets, 
+          train_net=vggtest, loss=loss, optimizer=optimizer, device=device)
+    
+    # train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=224)
+    # d2l.train_ch6(vggtest, train_iter, test_iter, num_epochs, lr, d2l.try_gpu())

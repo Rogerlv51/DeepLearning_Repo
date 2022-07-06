@@ -57,7 +57,7 @@ class VGG_11(nn.Module):
 # 需要说明的是这个自定义train函数可能在不同的训练任务上需要做修改，这里只是针对pytorch自带的数据集进行训练
 def train(epoch, train_iter, test_iter, train_net, loss, optimizer, device):    # 自定义训练函数，不用都d2l本身包里面自带的，锻炼工程能力       
     train_net.to(device)
-    last_loss = [0]
+    last_loss = [100]
     num_loss = 0
     for i in range(epoch):
         train_net.train()
@@ -79,9 +79,9 @@ def train(epoch, train_iter, test_iter, train_net, loss, optimizer, device):    
                       "---------Accurency: %.2f" % accurency)
             
         
-        # 设置early_stop防止过拟合，当然也可以直接调pytorch的API
-        last_loss.append(real_loss)
-        if last_loss[i] > last_loss[i-1]:
+        # 设置early_stop防止过拟合，当然也可以直接调pytorch的API，这里我写的比较简单
+        last_loss.append(real_loss.item())
+        if last_loss[i+1] > last_loss[i]:
             num_loss += 1
         else:
             num_loss = 0 

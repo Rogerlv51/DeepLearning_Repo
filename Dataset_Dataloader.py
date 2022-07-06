@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 
 # 通常使用Compose把你要做的transform全都包起来比如：
 trans = transforms.Compose([
-    transforms.PILToTensor(),    # 这一步transforms是必须要有的，不然pytorch读取不了
+    transforms.PILToTensor(),    
     transforms.Resize((224, 224)),
-    transforms.ToTensor(),])
+    transforms.ToTensor(),])   # 这一步transforms是必须要有的，不然pytorch读取不了
 
 class mydataset(Dataset):
     def __init__(self, label_name, img_dir, transform=None, target_transform=None):

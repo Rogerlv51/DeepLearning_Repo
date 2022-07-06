@@ -50,7 +50,12 @@ class VGG_11(nn.Module):
         x = self.linear3(x)
         return x
 
-def train(epoch, train_iter, test_data, test_label, train_net, loss, optimizer, device):    # 自定义训练函数，不用都d2l本身包里面自带的，锻炼工程能力       
+
+# 参数说明：
+# train_iter和test_iter都需要是Dataloader实例化之后的对象
+# loss为损失函数，optimizer为优化器，device指定是否在GPU上训练
+# 需要说明的是这个自定义train函数可能在不同的训练任务上需要做修改，这里只是针对pytorch自带的数据集进行训练
+def train(epoch, train_iter, test_iter, train_net, loss, optimizer, device):    # 自定义训练函数，不用都d2l本身包里面自带的，锻炼工程能力       
     train_net.to(device)
     last_loss = [0]
     num_loss = 0
@@ -66,9 +71,10 @@ def train(epoch, train_iter, test_data, test_label, train_net, loss, optimizer, 
             with torch.no_grad():
                 train_net.eval()
                 if batch == batch_size - 1:
-                    test_out = train_net(test_data.float().to(device))
+                    test_x, test_y = next(iter(test_iter))
+                    test_out = train_net(test_x.float().to(device))
                     pred_y = torch.max(test_out, 1)[1].to(device).data.squeeze()
-                    accurency = (test_label.to(device)==pred_y).sum().item() / len(test_label.to(device)) 
+                    accurency = (test_y.to(device)==pred_y).sum().item() / len(test_y.to(device)) 
                     print("Epoch: ", i+1, "---------Train Loss: %.4f" % real_loss.item(), 
                       "---------Accurency: %.2f" % accurency)
             
@@ -86,10 +92,11 @@ def train(epoch, train_iter, test_data, test_label, train_net, loss, optimizer, 
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Now Train on:  :", device, "\n")
     conv_arch = ((1, 64), (1, 128), (2, 256), (2, 512), (2, 512))
     ratio = 4
     small_conv_arch = [(pair[0], pair[1] // ratio) for pair in conv_arch]
-    # 这里电脑用的cpu就把epoch这些改小点为了速度，GPU显存不够话也调小batch_size
+    # VGG这个网络一定不要在本地跑，显卡不够的话慢的要死，直接上云端GPU，GPU显存不够话要调小batch_size
     lr, num_epochs, batch_size = 0.05, 10, 64 
     vggtest = VGG_11(small_conv_arch)
     # print(vggtest)   # 打印网络结构
@@ -102,15 +109,19 @@ if __name__ == "__main__":
         transform=transforms.Compose([transforms.Resize((224,224)), transforms.ToTensor(), ]),    
         # 把数据转化成tensor形式，且灰度值会从0-255调整到0-1
         download=True)    # 本地有就设置成False，即使是True也不会重复下载
+    test_iter = DataLoader(test_data, num_workers=1, batch_size=batch_size, shuffle=False)
     training_data = torchvision.datasets.FashionMNIST(
         root="data", train=True, download=True,
         transform=transforms.Compose([transforms.Resize((224,224)), transforms.ToTensor(),]))
     train_iter = DataLoader(training_data, num_workers=1, batch_size=batch_size, shuffle=True)
     # print(test_data.data[0].shape)    # 看下图片数据大小
     # print(test_data.targets[0]) # 类别标签
-    
-    train(epoch=num_epochs, train_iter=train_iter, 
-          test_data=test_data.data.unsqueeze(dim=1), test_label=test_data.targets, 
+
+    ##
+    # 注意一个问题，使用pytorch自带的数据集时一定要导入到dataloader里面才能resize成功
+    ##
+
+    train(epoch=num_epochs, train_iter=train_iter, test_iter=test_iter, 
           train_net=vggtest, loss=loss, optimizer=optimizer, device=device)
     
     # train_iter, test_iter = d2l.load_data_fashion_mnist(batch_size, resize=224)

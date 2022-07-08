@@ -94,7 +94,7 @@ def train(epoch, train_iter, test_iter, train_net, loss, optimizer, device):    
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Now Train on:  :", device, "\n")
+    print("Now Train on:  ", device, "\n")
     conv_arch = ((1, 64), (1, 128), (2, 256), (2, 512), (2, 512))
     ratio = 4
     small_conv_arch = [(pair[0], pair[1] // ratio) for pair in conv_arch]

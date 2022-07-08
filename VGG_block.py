@@ -26,6 +26,7 @@ def vgg_block(num_convs, in_channels, out_channels):
 输出通道, 每个后续模块将输出通道数量翻倍, 直到该数字达到512。由于该⽹络使⽤8个卷积层和3个全连接
 层, 因此它通常被称为VGG-11。
 '''
+
 class VGG_11(nn.Module):
     def __init__(self, conv_arch):
         super(VGG_11, self).__init__()
@@ -49,8 +50,7 @@ class VGG_11(nn.Module):
         x = self.dropout2(self.relu2(self.linear2(x)))
         x = self.linear3(x)
         return x
-
-
+    
 # 参数说明：
 # train_iter和test_iter都需要是Dataloader实例化之后的对象
 # loss为损失函数，optimizer为优化器，device指定是否在GPU上训练
@@ -69,26 +69,28 @@ def train(epoch, train_iter, test_iter, train_net, loss, optimizer, device):    
             real_loss.backward()
             optimizer.step()
             with torch.no_grad():
-                train_net.eval()
                 if batch == batch_size - 1:
+                    train_net.eval()
                     test_x, test_y = next(iter(test_iter))
                     test_out = train_net(test_x.float().to(device))
                     pred_y = torch.max(test_out, 1)[1].to(device).data.squeeze()
                     accurency = (test_y.to(device)==pred_y).sum().item() / len(test_y.to(device)) 
                     print("Epoch: ", i+1, "---------Train Loss: %.4f" % real_loss.item(), 
-                      "---------Accurency: %.2f" % accurency)
-            
+                      "---------Accurency: %.3f" % accurency)
+                    last_loss.append(real_loss.item())
+                    print(last_loss[i+1])
         
-        # 设置early_stop防止过拟合，当然也可以直接调pytorch的API，这里我写的比较简单
-        last_loss.append(real_loss.item())
-        if last_loss[i+1] > last_loss[i]:
-            num_loss += 1
-        else:
-            num_loss = 0 
-        if num_loss >= 5:   # 这里设置early stop patience为5
-            print("The train process is done")
-            break
-
+                    # 设置early_stop防止过拟合，当然也可以直接调pytorch的API
+                    if last_loss[i+1] > last_loss[i]:
+                        num_loss += 1
+                    else:
+                        num_loss = 0 
+                    if num_loss >= 5:  
+                        print("The train process is done")
+                        break
+        if num_loss >= 5:   # 这里必须break两次，不然好像跳不出去
+            break     
+    
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -96,8 +98,8 @@ if __name__ == "__main__":
     conv_arch = ((1, 64), (1, 128), (2, 256), (2, 512), (2, 512))
     ratio = 4
     small_conv_arch = [(pair[0], pair[1] // ratio) for pair in conv_arch]
-    # VGG这个网络一定不要在本地跑，显卡不够的话慢的要死，直接上云端GPU，GPU显存不够话要调小batch_size
-    lr, num_epochs, batch_size = 0.05, 10, 64 
+    # 这里电脑用的cpu就把epoch这些改小点为了速度，GPU显存不够话也调小batch_size
+    lr, num_epochs, batch_size = 0.01, 30, 128 
     vggtest = VGG_11(small_conv_arch)
     # print(vggtest)   # 打印网络结构
     loss = nn.CrossEntropyLoss()

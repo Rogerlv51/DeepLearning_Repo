@@ -95,7 +95,7 @@ StopIteration:
 ```
 </br>
 
-## **关于python中的property装饰器**
+## **关于python中常用的property装饰器，classmethond装饰器，staticmethod装饰器**
 - **这个装饰器第一个作用是可以在调用方法的时候强制省略()，也就是说不允许用户传递任何参数，否则会报错**
 ```python
 class DataSet(object):
@@ -121,8 +121,31 @@ class DataSet(object):
     @property
     def labels(self):
         return self._labels
+    @labels.setter   # 使用这个装饰器，则可以改变私有属性labels的值
+    def labels(self, name):
+        self._labels = name
 l = DataSet()
 #用户进行属性调用的时候，直接调用images即可，而不用知道属性名_images，因此用户无法更改属性，从而保护了类的属性。
 print(l.images)  # 加了@property后，可以用调用属性的形式来调用方法,后面不需要加()，这就显得好像在调用属性一样
 ```
 </br>
+
+- **使用classmethod装饰器可以把方法变成实例化对象的函数使用，而staticmethod可以把方法变成静态，可以不需要实例化对象直接通过类调用**
+```python
+class User:
+    def __init__(self, name):
+        self._name = name
+    
+    @classmethod
+    def gen_user(cls):
+        return cls('handsome')
+    
+    @staticmethod
+    def length():
+        return 18
+
+if __name__ == '__main__':
+    new = User.gen_user()
+    print(new.name)
+    print(User.length())
+```

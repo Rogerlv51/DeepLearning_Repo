@@ -149,3 +149,15 @@ if __name__ == '__main__':
     print(new.name)
     print(User.length())
 ```
+</br>
+
+## **关于tqdm库**
+- **Tqdm 是一个快速，可扩展的Python进度条，可以在 Python 长循环中添加一个进度提示信息，总之是用来显示进度条的，jupyter中也常用**
+```python
+    ## 用法可以是下面的
+    with tqdm(train_dataloader, unit='batch', leave=False) as pbar:
+        pbar.set_description(f'training')
+    # 也可以循环里面用
+    for i in tqdm(range(100), desc="循环")    # desc就是个命令行输出的打印描述
+    ## 还有很多用法去看官方文档
+```

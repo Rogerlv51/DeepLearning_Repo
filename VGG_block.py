@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-from d2l import torch as d2l
+#from d2l import torch as d2l
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader

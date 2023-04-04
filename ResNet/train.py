@@ -1,3 +1,6 @@
+## 具体训练就不在这个文件夹进行了因为要上传GitHub
+## 详细内容参见：https://github.com/WZMIAOMIAO/deep-learning-for-image-processing/blob/master/pytorch_classification/Test5_resnet/train.py
+
 import os
 import sys
 import json
